@@ -1,17 +1,17 @@
 <template>
-    <component is="div" ref="componentRef">
+    <component :is="'div'" ref="componentRef">
         <slot :key="componentKey"></slot>
     </component>
 </template>
 
 <script lang="ts" setup>
-import Sortablejs from 'sortablejs';
+import Sortablejs from 'sortablejs'
 import { nextTick, onMounted, ref, useSlots } from 'vue'
 import useTransformData from './useTransformData'
 import { cloneDeep } from 'lodash'
 const $props = withDefaults(defineProps<{ pidKey: string; limitPid: boolean }>(), {
     pidKey: 'parentId',
-    limitPid: true
+    limitPid: false,
 })
 const componentKey = ref(0)
 const { parseData, toTreeData, buildRelationData } = useTransformData()
@@ -30,11 +30,11 @@ const initialTable = () => {
             onStart() {
                 // 打散全部的数据
                 const tableData = slot?.default?.()?.[0]?.props?.data
-                startParseData = parseData(tableData)
+                startParseData = $props.limitPid ? parseData(tableData) : tableData
             },
             onMove(evt) {
                 const { draggedData, relatedData } = buildRelationData(evt, startParseData)
-                console.log(draggedData[$props.pidKey] === relatedData[$props.pidKey]);
+                console.log(draggedData[$props.pidKey] === relatedData[$props.pidKey])
                 if ($props.limitPid) return draggedData[$props.pidKey] === relatedData[$props.pidKey]
                 return true
             },
@@ -45,13 +45,12 @@ const initialTable = () => {
                     finishData.splice(e.newIndex, 0, deleteData?.[0])
                     startParseData = finishData
                 }
-                const changedData = toTreeData(finishData)
-                console.log(changedData);
+                const changedData = $props.limitPid ? toTreeData(finishData) : finishData
                 $emit('changeData', changedData)
                 componentKey.value = Date.now()
                 sortable.destroy()
                 nextTick(() => initialTable())
-            }
+            },
         })
     }
 }
